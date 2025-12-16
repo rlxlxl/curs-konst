@@ -13,7 +13,7 @@
         
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: linear-gradient(135deg, #B19CD9 0%, #E6E6FA 50%, #DDA0DD 100%);
             min-height: 100vh;
             padding: 20px;
         }
@@ -28,7 +28,7 @@
         }
         
         header {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: linear-gradient(135deg, #9673A6 0%, #B19CD9 50%, #8B7FA8 100%);
             color: white;
             padding: 30px;
             text-align: center;
@@ -67,14 +67,14 @@
         }
         
         .btn-primary {
-            background: #667eea;
+            background: #9673A6;
             color: white;
         }
         
         .btn-primary:hover {
-            background: #5568d3;
+            background: #7B5F8E;
             transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+            box-shadow: 0 5px 15px rgba(150, 115, 166, 0.4);
         }
         
         .btn-danger {
@@ -87,12 +87,12 @@
         }
         
         .btn-success {
-            background: #28a745;
+            background: #B19CD9;
             color: white;
         }
         
         .btn-success:hover {
-            background: #218838;
+            background: #9B86C9;
         }
         
         .modal {
@@ -167,7 +167,7 @@
         .form-group select:focus,
         .form-group textarea:focus {
             outline: none;
-            border-color: #667eea;
+            border-color: #9673A6;
         }
         
         .form-group textarea {
@@ -183,18 +183,22 @@
         }
         
         .section-card {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: linear-gradient(135deg, #9673A6 0%, #B19CD9 100%);
             color: white;
             padding: 25px;
             border-radius: 15px;
             cursor: pointer;
             transition: all 0.3s;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+            box-shadow: 0 5px 15px rgba(150, 115, 166, 0.3);
+        }
+        
+        .section-card:nth-child(even) {
+            background: linear-gradient(135deg, #B19CD9 0%, #DDA0DD 100%);
         }
         
         .section-card:hover {
             transform: translateY(-5px);
-            box-shadow: 0 10px 25px rgba(0,0,0,0.3);
+            box-shadow: 0 10px 25px rgba(150, 115, 166, 0.5);
         }
         
         .section-card h3 {
@@ -216,17 +220,18 @@
             padding: 25px;
             margin-bottom: 20px;
             border-radius: 12px;
-            border-left: 5px solid #667eea;
+            border-left: 5px solid #9673A6;
             transition: all 0.3s;
         }
         
         .content-item:hover {
-            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            box-shadow: 0 5px 15px rgba(150, 115, 166, 0.2);
             transform: translateX(5px);
+            border-left-color: #B19CD9;
         }
         
         .content-item h3 {
-            color: #667eea;
+            color: #9673A6;
             margin-bottom: 15px;
             font-size: 1.5em;
         }
@@ -277,7 +282,7 @@
             </div>
             <div id="userInfo" class="user-info hidden">
                 <span id="usernameDisplay"></span>
-                <span id="adminBadge" class="hidden" style="background: #ffc107; color: #000; padding: 5px 15px; border-radius: 20px; font-weight: bold;">Админ</span>
+                <span id="adminBadge" class="hidden" style="background: #B19CD9; color: #fff; padding: 5px 15px; border-radius: 20px; font-weight: bold;">Админ</span>
                 <button class="btn btn-danger" onclick="logout()">Выход</button>
             </div>
         </div>
