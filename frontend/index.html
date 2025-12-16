@@ -1,0 +1,731 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Справочная система по информационной безопасности</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            overflow: hidden;
+        }
+        
+        header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+        
+        header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+        
+        .auth-section {
+            padding: 20px 30px;
+            background: #f8f9fa;
+            border-bottom: 2px solid #e9ecef;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+        
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+        
+        .btn-primary {
+            background: #667eea;
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            background: #5568d3;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+        
+        .btn-danger {
+            background: #dc3545;
+            color: white;
+        }
+        
+        .btn-danger:hover {
+            background: #c82333;
+        }
+        
+        .btn-success {
+            background: #28a745;
+            color: white;
+        }
+        
+        .btn-success:hover {
+            background: #218838;
+        }
+        
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            backdrop-filter: blur(5px);
+        }
+        
+        .modal-content {
+            background: white;
+            margin: 5% auto;
+            padding: 30px;
+            border-radius: 15px;
+            width: 90%;
+            max-width: 500px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+            animation: slideDown 0.3s;
+        }
+        
+        @keyframes slideDown {
+            from {
+                transform: translateY(-50px);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+        
+        .close {
+            color: #aaa;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        
+        .close:hover {
+            color: #000;
+        }
+        
+        .form-group {
+            margin-bottom: 20px;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #333;
+        }
+        
+        .form-group input,
+        .form-group select,
+        .form-group textarea {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e9ecef;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: border-color 0.3s;
+        }
+        
+        .form-group input:focus,
+        .form-group select:focus,
+        .form-group textarea:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        
+        .form-group textarea {
+            resize: vertical;
+            min-height: 150px;
+        }
+        
+        .sections {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            padding: 30px;
+        }
+        
+        .section-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 25px;
+            border-radius: 15px;
+            cursor: pointer;
+            transition: all 0.3s;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+        
+        .section-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 25px rgba(0,0,0,0.3);
+        }
+        
+        .section-card h3 {
+            font-size: 1.5em;
+            margin-bottom: 10px;
+        }
+        
+        .section-card p {
+            opacity: 0.9;
+            font-size: 0.95em;
+        }
+        
+        .content-area {
+            padding: 30px;
+        }
+        
+        .content-item {
+            background: #f8f9fa;
+            padding: 25px;
+            margin-bottom: 20px;
+            border-radius: 12px;
+            border-left: 5px solid #667eea;
+            transition: all 0.3s;
+        }
+        
+        .content-item:hover {
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            transform: translateX(5px);
+        }
+        
+        .content-item h3 {
+            color: #667eea;
+            margin-bottom: 15px;
+            font-size: 1.5em;
+        }
+        
+        .content-item p {
+            color: #555;
+            line-height: 1.6;
+        }
+        
+        .admin-controls {
+            margin-top: 15px;
+            display: flex;
+            gap: 10px;
+        }
+        
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+        
+        .success {
+            background: #d4edda;
+            color: #155724;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+        
+        .hidden {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🔒 Справочная система по информационной безопасности</h1>
+            <p>Полная информация о стандартах, лицензиях и защите данных</p>
+        </header>
+        
+        <div class="auth-section">
+            <div id="authButtons">
+                <button class="btn btn-primary" onclick="showLoginModal()">Вход</button>
+                <button class="btn btn-primary" onclick="showRegisterModal()">Регистрация</button>
+            </div>
+            <div id="userInfo" class="user-info hidden">
+                <span id="usernameDisplay"></span>
+                <span id="adminBadge" class="hidden" style="background: #ffc107; color: #000; padding: 5px 15px; border-radius: 20px; font-weight: bold;">Админ</span>
+                <button class="btn btn-danger" onclick="logout()">Выход</button>
+            </div>
+        </div>
+        
+        <div id="sectionsView" class="sections"></div>
+        <div id="contentView" class="content-area hidden"></div>
+    </div>
+    
+    <!-- Модальное окно входа -->
+    <div id="loginModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeModal('loginModal')">&times;</span>
+            <h2>Вход в систему</h2>
+            <div id="loginError" class="error hidden"></div>
+            <form id="loginForm" onsubmit="login(event)">
+                <div class="form-group">
+                    <label>Имя пользователя:</label>
+                    <input type="text" name="username" required>
+                </div>
+                <div class="form-group">
+                    <label>Пароль:</label>
+                    <input type="password" name="password" required>
+                </div>
+                <button type="submit" class="btn btn-primary" style="width: 100%;">Войти</button>
+            </form>
+        </div>
+    </div>
+    
+    <!-- Модальное окно регистрации -->
+    <div id="registerModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeModal('registerModal')">&times;</span>
+            <h2>Регистрация</h2>
+            <div id="registerError" class="error hidden"></div>
+            <div id="registerSuccess" class="success hidden"></div>
+            <form id="registerForm" onsubmit="register(event)">
+                <div class="form-group">
+                    <label>Имя пользователя:</label>
+                    <input type="text" name="username" required>
+                </div>
+                <div class="form-group">
+                    <label>Email:</label>
+                    <input type="email" name="email" required>
+                </div>
+                <div class="form-group">
+                    <label>Пароль:</label>
+                    <input type="password" name="password" required>
+                </div>
+                <button type="submit" class="btn btn-success" style="width: 100%;">Зарегистрироваться</button>
+            </form>
+        </div>
+    </div>
+    
+    <!-- Модальное окно создания/редактирования контента (только для админа) -->
+    <div id="contentModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeModal('contentModal')">&times;</span>
+            <h2 id="contentModalTitle">Создать запись</h2>
+            <div id="contentError" class="error hidden"></div>
+            <form id="contentForm" onsubmit="saveContent(event)">
+                <div class="form-group">
+                    <label>Раздел:</label>
+                    <select name="section_id" id="contentSectionId" required></select>
+                </div>
+                <div class="form-group">
+                    <label>Заголовок:</label>
+                    <input type="text" name="title" id="contentTitle" required>
+                </div>
+                <div class="form-group">
+                    <label>Содержание:</label>
+                    <textarea name="content_text" id="contentText" required></textarea>
+                </div>
+                <button type="submit" class="btn btn-success" style="width: 100%;">Сохранить</button>
+            </form>
+        </div>
+    </div>
+    
+    <script>
+        const API_URL = '/api';
+        let currentUser = null;
+        let currentSectionId = null;
+        let editingContentId = null;
+        let sections = [];
+        
+        // Инициализация при загрузке
+        window.onload = function() {
+            loadSections();
+            checkAuth();
+        };
+        
+        // Проверка аутентификации
+        function checkAuth() {
+            const token = localStorage.getItem('token');
+            if (token) {
+                currentUser = {
+                    token: token,
+                    user_id: localStorage.getItem('user_id'),
+                    role_id: parseInt(localStorage.getItem('role_id'))
+                };
+                updateUI();
+            }
+        }
+        
+        // Загрузка разделов
+        async function loadSections() {
+            try {
+                const response = await fetch(`${API_URL}/sections`);
+                sections = await response.json();
+                displaySections();
+            } catch (error) {
+                console.error('Error loading sections:', error);
+            }
+        }
+        
+        // Отображение разделов
+        function displaySections() {
+            const sectionsView = document.getElementById('sectionsView');
+            sectionsView.innerHTML = '';
+            sectionsView.className = 'sections';
+            
+            sections.forEach(section => {
+                const card = document.createElement('div');
+                card.className = 'section-card';
+                card.onclick = () => loadSectionContent(section.id);
+                card.innerHTML = `
+                    <h3>${section.name}</h3>
+                    <p>${section.description || ''}</p>
+                `;
+                sectionsView.appendChild(card);
+            });
+        }
+        
+        // Загрузка контента раздела
+        async function loadSectionContent(sectionId) {
+            currentSectionId = sectionId;
+            try {
+                const response = await fetch(`${API_URL}/content?section_id=${sectionId}`);
+                const content = await response.json();
+                displayContent(content, sectionId);
+            } catch (error) {
+                console.error('Error loading content:', error);
+            }
+        }
+        
+        // Отображение контента
+        function displayContent(content, sectionId) {
+            const sectionsView = document.getElementById('sectionsView');
+            const contentView = document.getElementById('contentView');
+            
+            sectionsView.className = 'hidden';
+            contentView.className = 'content-area';
+            contentView.innerHTML = '';
+            
+            const section = sections.find(s => s.id === sectionId);
+            const backButton = document.createElement('button');
+            backButton.className = 'btn btn-primary';
+            backButton.textContent = '← Назад к разделам';
+            backButton.onclick = () => {
+                sectionsView.className = 'sections';
+                contentView.className = 'hidden';
+                currentSectionId = null;
+            };
+            contentView.appendChild(backButton);
+            
+            const title = document.createElement('h2');
+            title.textContent = section.name;
+            title.style.marginTop = '20px';
+            title.style.marginBottom = '20px';
+            contentView.appendChild(title);
+            
+            if (currentUser && currentUser.role_id === 1) {
+                const addButton = document.createElement('button');
+                addButton.className = 'btn btn-success';
+                addButton.textContent = '+ Добавить запись';
+                addButton.style.marginBottom = '20px';
+                addButton.onclick = () => showContentModal(null, sectionId);
+                contentView.appendChild(addButton);
+            }
+            
+            content.forEach(item => {
+                const div = document.createElement('div');
+                div.className = 'content-item';
+                div.innerHTML = `
+                    <h3>${item.title}</h3>
+                    <p>${item.content_text}</p>
+                    ${currentUser && currentUser.role_id === 1 ? `
+                        <div class="admin-controls">
+                            <button class="btn btn-primary" onclick="showContentModal(${item.id}, ${item.section_id})">Редактировать</button>
+                            <button class="btn btn-danger" onclick="deleteContent(${item.id})">Удалить</button>
+                        </div>
+                    ` : ''}
+                `;
+                contentView.appendChild(div);
+            });
+        }
+        
+        // Показать модальное окно входа
+        function showLoginModal() {
+            document.getElementById('loginModal').style.display = 'block';
+        }
+        
+        // Показать модальное окно регистрации
+        function showRegisterModal() {
+            document.getElementById('registerModal').style.display = 'block';
+        }
+        
+        // Закрыть модальное окно
+        function closeModal(modalId) {
+            document.getElementById(modalId).style.display = 'none';
+            document.getElementById(modalId + 'Error')?.classList.add('hidden');
+        }
+        
+        // Вход
+        async function login(event) {
+            event.preventDefault();
+            const form = event.target;
+            const formData = new FormData(form);
+            
+            const params = new URLSearchParams();
+            params.append('username', formData.get('username'));
+            params.append('password', formData.get('password'));
+            
+            try {
+                const response = await fetch(`${API_URL}/login`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                    },
+                    body: params
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    currentUser = data;
+                    localStorage.setItem('token', data.token);
+                    localStorage.setItem('user_id', data.user_id);
+                    localStorage.setItem('role_id', data.role_id);
+                    closeModal('loginModal');
+                    updateUI();
+                } else {
+                    const error = await response.json();
+                    showError('loginError', error.error || 'Ошибка входа');
+                }
+            } catch (error) {
+                showError('loginError', 'Ошибка соединения');
+            }
+        }
+        
+        // Регистрация
+        async function register(event) {
+            event.preventDefault();
+            const form = event.target;
+            const formData = new FormData(form);
+            
+            const params = new URLSearchParams();
+            params.append('username', formData.get('username'));
+            params.append('email', formData.get('email'));
+            params.append('password', formData.get('password'));
+            
+            try {
+                const response = await fetch(`${API_URL}/register`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                    },
+                    body: params
+                });
+                
+                if (response.ok) {
+                    document.getElementById('registerError').classList.add('hidden');
+                    const successDiv = document.getElementById('registerSuccess');
+                    successDiv.textContent = 'Регистрация успешна! Теперь вы можете войти.';
+                    successDiv.classList.remove('hidden');
+                    setTimeout(() => {
+                        closeModal('registerModal');
+                        showLoginModal();
+                    }, 2000);
+                } else {
+                    const error = await response.json();
+                    showError('registerError', error.error || 'Ошибка регистрации');
+                }
+            } catch (error) {
+                showError('registerError', 'Ошибка соединения');
+            }
+        }
+        
+        // Выход
+        function logout() {
+            currentUser = null;
+            localStorage.removeItem('token');
+            localStorage.removeItem('user_id');
+            localStorage.removeItem('role_id');
+            updateUI();
+        }
+        
+        // Обновление UI
+        function updateUI() {
+            const authButtons = document.getElementById('authButtons');
+            const userInfo = document.getElementById('userInfo');
+            
+            if (currentUser) {
+                authButtons.classList.add('hidden');
+                userInfo.classList.remove('hidden');
+                document.getElementById('usernameDisplay').textContent = `Пользователь: ID ${currentUser.user_id}`;
+                if (currentUser.role_id === 1) {
+                    document.getElementById('adminBadge').classList.remove('hidden');
+                } else {
+                    document.getElementById('adminBadge').classList.add('hidden');
+                }
+            } else {
+                authButtons.classList.remove('hidden');
+                userInfo.classList.add('hidden');
+            }
+        }
+        
+        // Показать модальное окно для создания/редактирования контента
+        function showContentModal(contentId, sectionId) {
+            editingContentId = contentId;
+            const modal = document.getElementById('contentModal');
+            const title = document.getElementById('contentModalTitle');
+            const form = document.getElementById('contentForm');
+            const sectionSelect = document.getElementById('contentSectionId');
+            
+            title.textContent = contentId ? 'Редактировать запись' : 'Создать запись';
+            
+            // Заполнить выпадающий список разделов
+            sectionSelect.innerHTML = '';
+            sections.forEach(section => {
+                const option = document.createElement('option');
+                option.value = section.id;
+                option.textContent = section.name;
+                if (section.id === sectionId) option.selected = true;
+                sectionSelect.appendChild(option);
+            });
+            
+            if (contentId) {
+                // Загрузить данные для редактирования
+                fetch(`${API_URL}/content?section_id=${sectionId}`)
+                    .then(r => r.json())
+                    .then(content => {
+                        const item = content.find(c => c.id === contentId);
+                        if (item) {
+                            document.getElementById('contentTitle').value = item.title;
+                            document.getElementById('contentText').value = item.content_text;
+                        }
+                    });
+            } else {
+                form.reset();
+            }
+            
+            modal.style.display = 'block';
+        }
+        
+        // Сохранить контент
+        async function saveContent(event) {
+            event.preventDefault();
+            if (!currentUser || currentUser.role_id !== 1) {
+                showError('contentError', 'Только администратор может редактировать контент');
+                return;
+            }
+            
+            const form = event.target;
+            const formData = new FormData(form);
+            
+            const params = new URLSearchParams();
+            params.append('section_id', formData.get('section_id'));
+            params.append('title', formData.get('title'));
+            params.append('content_text', formData.get('content_text'));
+            
+            try {
+                const url = editingContentId 
+                    ? `${API_URL}/content/${editingContentId}`
+                    : `${API_URL}/content`;
+                const method = editingContentId ? 'PUT' : 'POST';
+                
+                const response = await fetch(url, {
+                    method: method,
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                        'Authorization': currentUser.token
+                    },
+                    body: params
+                });
+                
+                if (response.ok) {
+                    closeModal('contentModal');
+                    if (currentSectionId) {
+                        loadSectionContent(currentSectionId);
+                    }
+                } else {
+                    const error = await response.json();
+                    showError('contentError', error.error || 'Ошибка сохранения');
+                }
+            } catch (error) {
+                showError('contentError', 'Ошибка соединения');
+            }
+        }
+        
+        // Удалить контент
+        async function deleteContent(contentId) {
+            if (!currentUser || currentUser.role_id !== 1) {
+                alert('Только администратор может удалять контент');
+                return;
+            }
+            
+            if (!confirm('Вы уверены, что хотите удалить эту запись?')) {
+                return;
+            }
+            
+            try {
+                const response = await fetch(`${API_URL}/content/${contentId}`, {
+                    method: 'DELETE',
+                    headers: {
+                        'Authorization': currentUser.token
+                    }
+                });
+                
+                if (response.ok) {
+                    if (currentSectionId) {
+                        loadSectionContent(currentSectionId);
+                    }
+                } else {
+                    const error = await response.json();
+                    alert(error.error || 'Ошибка удаления');
+                }
+            } catch (error) {
+                alert('Ошибка соединения');
+            }
+        }
+        
+        // Показать ошибку
+        function showError(elementId, message) {
+            const errorDiv = document.getElementById(elementId);
+            errorDiv.textContent = message;
+            errorDiv.classList.remove('hidden');
+        }
+        
+        // Закрытие модальных окон при клике вне их
+        window.onclick = function(event) {
+            const modals = ['loginModal', 'registerModal', 'contentModal'];
+            modals.forEach(modalId => {
+                const modal = document.getElementById(modalId);
+                if (event.target == modal) {
+                    closeModal(modalId);
+                }
+            });
+        }
+    </script>
+</body>
+</html>
+
