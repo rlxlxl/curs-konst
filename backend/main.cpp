@@ -13,7 +13,7 @@
 #include <time.h>
 #include <iomanip>
 #include <openssl/sha.h>
-
+using namespace std;
 #define PORT 8080
 #define BUFFER_SIZE 4096
 
@@ -24,7 +24,7 @@ struct Database {
         const char* conninfo = "host=database dbname=infosec_db user=postgres password=postgres";
         conn = PQconnectdb(conninfo);
         if (PQstatus(conn) != CONNECTION_OK) {
-            std::cerr << "Connection to database failed: " << PQerrorMessage(conn) << std::endl;
+            cerr << "Connection to database failed: " << PQerrorMessage(conn) << endl;
             PQfinish(conn);
             exit(1);
         }
@@ -39,19 +39,19 @@ struct Database {
 Database db;
 
 // Простая структура для сессий (в реальном приложении использовать Redis или БД)
-std::map<std::string, int> sessions; // token -> user_id
+map<string, int> sessions; // token -> user_id
 pthread_mutex_t sessions_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 // Утилиты для работы с HTTP
-std::string urlDecode(const std::string& str) {
-    std::string result;
+string urlDecode(const string& str) {
+    string result;
     for (size_t i = 0; i < str.length(); ++i) {
         if (str[i] == '+') {
             result += ' ';
         } else if (str[i] == '%' && i + 2 < str.length()) {
             int value;
-            std::istringstream is(str.substr(i + 1, 2));
-            if (is >> std::hex >> value) {
+            istringstream is(str.substr(i + 1, 2));
+            if (is >> hex >> value) {
                 result += static_cast<char>(value);
                 i += 2;
             } else {
@@ -64,25 +64,25 @@ std::string urlDecode(const std::string& str) {
     return result;
 }
 
-std::map<std::string, std::string> parseQueryString(const std::string& query) {
-    std::map<std::string, std::string> params;
-    std::istringstream ss(query);
-    std::string pair;
+map<string, string> parseQueryString(const string& query) {
+    map<string, string> params;
+    istringstream ss(query);
+    string pair;
     
-    while (std::getline(ss, pair, '&')) {
+    while (getline(ss, pair, '&')) {
         size_t pos = pair.find('=');
-        if (pos != std::string::npos) {
-            std::string key = urlDecode(pair.substr(0, pos));
-            std::string value = urlDecode(pair.substr(pos + 1));
+        if (pos != string::npos) {
+            string key = urlDecode(pair.substr(0, pos));
+            string value = urlDecode(pair.substr(pos + 1));
             params[key] = value;
         }
     }
     return params;
 }
 
-std::string generateToken() {
+string generateToken() {
     srand(time(nullptr));
-    std::string token;
+    string token;
     const char charset[] = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
     for (int i = 0; i < 32; ++i) {
         token += charset[rand() % (sizeof(charset) - 1)];
@@ -90,21 +90,21 @@ std::string generateToken() {
     return token;
 }
 
-std::string sha256(const std::string& str) {
+string sha256(const string& str) {
     unsigned char hash[SHA256_DIGEST_LENGTH];
     SHA256_CTX sha256;
     SHA256_Init(&sha256);
     SHA256_Update(&sha256, str.c_str(), str.length());
     SHA256_Final(hash, &sha256);
     
-    std::stringstream ss;
+    stringstream ss;
     for (int i = 0; i < SHA256_DIGEST_LENGTH; i++) {
-        ss << std::hex << std::setw(2) << std::setfill('0') << (int)hash[i];
+        ss << hex << setw(2) << setfill('0') << (int)hash[i];
     }
     return ss.str();
 }
 
-int getUserIdFromToken(const std::string& token) {
+int getUserIdFromToken(const string& token) {
     pthread_mutex_lock(&sessions_mutex);
     auto it = sessions.find(token);
     int userId = (it != sessions.end()) ? it->second : -1;
@@ -117,7 +117,7 @@ bool isAdmin(int userId) {
     
     const char* query = "SELECT role_id FROM users WHERE id = $1";
     const char* paramValues[1];
-    std::string userIdStr = std::to_string(userId);
+    string userIdStr = to_string(userId);
     paramValues[0] = userIdStr.c_str();
     const int paramLengths[1] = {userIdStr.length()};
     const int paramFormats[1] = {0};
@@ -139,8 +139,8 @@ bool isAdmin(int userId) {
     return roleId == 1; // 1 = admin
 }
 
-std::string jsonEscape(const std::string& str) {
-    std::string result;
+string jsonEscape(const string& str) {
+    string result;
     for (char c : str) {
         if (c == '"') result += "\\\"";
         else if (c == '\\') result += "\\\\";
@@ -152,8 +152,8 @@ std::string jsonEscape(const std::string& str) {
     return result;
 }
 
-std::string sendResponse(int clientSocket, const std::string& status, const std::string& contentType, const std::string& body, const std::map<std::string, std::string>& headers = {}) {
-    std::stringstream response;
+string sendResponse(int clientSocket, const string& status, const string& contentType, const string& body, const map<string, string>& headers = {}) {
+    stringstream response;
     response << status << "\r\n";
     response << "Content-Type: " << contentType << "\r\n";
     response << "Content-Length: " << body.length() << "\r\n";
@@ -167,7 +167,7 @@ std::string sendResponse(int clientSocket, const std::string& status, const std:
     
     response << "\r\n" << body;
     
-    std::string responseStr = response.str();
+    string responseStr = response.str();
     send(clientSocket, responseStr.c_str(), responseStr.length(), 0);
     return responseStr;
 }
@@ -176,9 +176,9 @@ void handleRequest(int clientSocket) {
     char buffer[BUFFER_SIZE] = {0};
     recv(clientSocket, buffer, BUFFER_SIZE, 0);
     
-    std::string request(buffer);
-    std::istringstream requestStream(request);
-    std::string method, path, version;
+    string request(buffer);
+    istringstream requestStream(request);
+    string method, path, version;
     requestStream >> method >> path >> version;
     
     // CORS preflight
@@ -190,21 +190,21 @@ void handleRequest(int clientSocket) {
     
     // Извлечение query string
     size_t queryPos = path.find('?');
-    std::string pathOnly = (queryPos != std::string::npos) ? path.substr(0, queryPos) : path;
+    string pathOnly = (queryPos != string::npos) ? path.substr(0, queryPos) : path;
     // Удаление завершающего слеша
     if (pathOnly.length() > 1 && pathOnly.back() == '/') {
         pathOnly.pop_back();
     }
-    std::string queryString = (queryPos != std::string::npos) ? path.substr(queryPos + 1) : "";
+    string queryString = (queryPos != string::npos) ? path.substr(queryPos + 1) : "";
     auto queryParams = parseQueryString(queryString);
     
     // Извлечение токена из заголовков
-    std::string authToken;
+    string authToken;
     size_t authPos = request.find("Authorization: ");
-    if (authPos != std::string::npos) {
+    if (authPos != string::npos) {
         size_t tokenStart = authPos + 15;
         size_t tokenEnd = request.find("\r\n", tokenStart);
-        if (tokenEnd != std::string::npos) {
+        if (tokenEnd != string::npos) {
             authToken = request.substr(tokenStart, tokenEnd - tokenStart);
         }
     }
@@ -222,7 +222,7 @@ void handleRequest(int clientSocket) {
             return;
         }
         
-        std::stringstream json;
+        stringstream json;
         json << "[";
         int rows = PQntuples(res);
         for (int i = 0; i < rows; i++) {
@@ -239,7 +239,7 @@ void handleRequest(int clientSocket) {
     else if (pathOnly == "/api/content") {
         if (method == "GET") {
             int sectionId = queryParams.find("section_id") != queryParams.end() 
-                ? std::stoi(queryParams["section_id"]) : 0;
+                ? stoi(queryParams["section_id"]) : 0;
             
             const char* query;
             PGresult* res;
@@ -248,7 +248,7 @@ void handleRequest(int clientSocket) {
                 // Защита от SQL инъекций: параметризованный запрос
                 query = "SELECT id, section_id, title, content_text, created_at, updated_at FROM content WHERE section_id = $1 ORDER BY id";
                 const char* paramValues[1];
-                std::string sectionIdStr = std::to_string(sectionId);
+                string sectionIdStr = to_string(sectionId);
                 paramValues[0] = sectionIdStr.c_str();
                 const int paramLengths[1] = {sectionIdStr.length()};
                 const int paramFormats[1] = {0};
@@ -266,7 +266,7 @@ void handleRequest(int clientSocket) {
                 return;
             }
             
-            std::stringstream json;
+            stringstream json;
             json << "[";
             int rows = PQntuples(res);
             for (int i = 0; i < rows; i++) {
@@ -294,7 +294,7 @@ void handleRequest(int clientSocket) {
             
             // Извлечение тела запроса
             size_t bodyPos = request.find("\r\n\r\n");
-            std::string body = (bodyPos != std::string::npos) ? request.substr(bodyPos + 4) : "";
+            string body = (bodyPos != string::npos) ? request.substr(bodyPos + 4) : "";
             auto bodyParams = parseQueryString(body);
             
             if (bodyParams.find("section_id") == bodyParams.end() || 
@@ -312,7 +312,7 @@ void handleRequest(int clientSocket) {
             paramValues[0] = bodyParams["section_id"].c_str();
             paramValues[1] = bodyParams["title"].c_str();
             paramValues[2] = bodyParams["content_text"].c_str();
-            std::string userIdStr = std::to_string(userId);
+            string userIdStr = to_string(userId);
             paramValues[3] = userIdStr.c_str();
             const int paramLengths[4] = {bodyParams["section_id"].length(), 
                                         bodyParams["title"].length(), 
@@ -330,15 +330,15 @@ void handleRequest(int clientSocket) {
                 return;
             }
             
-            std::string newId = PQgetvalue(res, 0, 0);
+            string newId = PQgetvalue(res, 0, 0);
             sendResponse(clientSocket, "HTTP/1.1 201 Created", "application/json", 
                         "{\"id\":" + newId + ",\"message\":\"Content created\"}");
             PQclear(res);
         }
     }
     else if (pathOnly.find("/api/content/") == 0 && pathOnly.length() > 13) {
-        std::string idStr = pathOnly.substr(13);
-        int contentId = std::stoi(idStr);
+        string idStr = pathOnly.substr(13);
+        int contentId = stoi(idStr);
         
         if (method == "PUT") {
             int userId = getUserIdFromToken(authToken);
@@ -350,7 +350,7 @@ void handleRequest(int clientSocket) {
             }
             
             size_t bodyPos = request.find("\r\n\r\n");
-            std::string body = (bodyPos != std::string::npos) ? request.substr(bodyPos + 4) : "";
+            string body = (bodyPos != string::npos) ? request.substr(bodyPos + 4) : "";
             auto bodyParams = parseQueryString(body);
             
             if (bodyParams.find("title") == bodyParams.end() || 
@@ -366,7 +366,7 @@ void handleRequest(int clientSocket) {
             const char* paramValues[3];
             paramValues[0] = bodyParams["title"].c_str();
             paramValues[1] = bodyParams["content_text"].c_str();
-            std::string idStrParam = std::to_string(contentId);
+            string idStrParam = to_string(contentId);
             paramValues[2] = idStrParam.c_str();
             const int paramLengths[3] = {bodyParams["title"].length(), 
                                         bodyParams["content_text"].length(), 
@@ -399,7 +399,7 @@ void handleRequest(int clientSocket) {
             // Параметризованный запрос
             const char* query = "DELETE FROM content WHERE id = $1";
             const char* paramValues[1];
-            std::string idStrParam = std::to_string(contentId);
+            string idStrParam = to_string(contentId);
             paramValues[0] = idStrParam.c_str();
             const int paramLengths[1] = {idStrParam.length()};
             const int paramFormats[1] = {0};
@@ -421,7 +421,7 @@ void handleRequest(int clientSocket) {
     }
     else if (pathOnly == "/api/register" && method == "POST") {
         size_t bodyPos = request.find("\r\n\r\n");
-        std::string body = (bodyPos != std::string::npos) ? request.substr(bodyPos + 4) : "";
+        string body = (bodyPos != string::npos) ? request.substr(bodyPos + 4) : "";
         auto bodyParams = parseQueryString(body);
         
         if (bodyParams.find("username") == bodyParams.end() || 
@@ -434,7 +434,7 @@ void handleRequest(int clientSocket) {
         }
         
         // Хеширование пароля
-        std::string passwordHash = sha256(bodyParams["password"]);
+        string passwordHash = sha256(bodyParams["password"]);
         
         // Параметризованный запрос
         const char* query = "INSERT INTO users (username, email, password_hash, role_id) VALUES ($1, $2, $3, 2) RETURNING id";
@@ -450,8 +450,8 @@ void handleRequest(int clientSocket) {
         PGresult* res = PQexecParams(db.conn, query, 3, nullptr, paramValues, paramLengths, paramFormats, 0);
         
         if (PQresultStatus(res) != PGRES_TUPLES_OK) {
-            std::string error = PQerrorMessage(db.conn);
-            if (error.find("unique") != std::string::npos) {
+            string error = PQerrorMessage(db.conn);
+            if (error.find("unique") != string::npos) {
                 sendResponse(clientSocket, "HTTP/1.1 409 Conflict", "application/json", 
                             "{\"error\":\"Username or email already exists\"}");
             } else {
@@ -463,14 +463,14 @@ void handleRequest(int clientSocket) {
             return;
         }
         
-        std::string userId = PQgetvalue(res, 0, 0);
+        string userId = PQgetvalue(res, 0, 0);
         sendResponse(clientSocket, "HTTP/1.1 201 Created", "application/json", 
                     "{\"id\":" + userId + ",\"message\":\"User created\"}");
         PQclear(res);
     }
     else if (pathOnly == "/api/login" && method == "POST") {
         size_t bodyPos = request.find("\r\n\r\n");
-        std::string body = (bodyPos != std::string::npos) ? request.substr(bodyPos + 4) : "";
+        string body = (bodyPos != string::npos) ? request.substr(bodyPos + 4) : "";
         auto bodyParams = parseQueryString(body);
         
         if (bodyParams.find("username") == bodyParams.end() || 
@@ -481,7 +481,7 @@ void handleRequest(int clientSocket) {
             return;
         }
         
-        std::string passwordHash = sha256(bodyParams["password"]);
+        string passwordHash = sha256(bodyParams["password"]);
         
         // Параметризованный запрос
         const char* query = "SELECT id, role_id FROM users WHERE username = $1 AND password_hash = $2";
@@ -503,13 +503,13 @@ void handleRequest(int clientSocket) {
         
         int userId = atoi(PQgetvalue(res, 0, 0));
         int roleId = atoi(PQgetvalue(res, 0, 1));
-        std::string token = generateToken();
+        string token = generateToken();
         
         pthread_mutex_lock(&sessions_mutex);
         sessions[token] = userId;
         pthread_mutex_unlock(&sessions_mutex);
         
-        std::stringstream json;
+        stringstream json;
         json << "{\"token\":\"" << token << "\",\"user_id\":" << userId << ",\"role_id\":" << roleId << "}";
         sendResponse(clientSocket, "HTTP/1.1 200 OK", "application/json", json.str());
         PQclear(res);
@@ -532,7 +532,7 @@ void* clientHandler(void* arg) {
 int main() {
     int serverSocket = socket(AF_INET, SOCK_STREAM, 0);
     if (serverSocket == 0) {
-        std::cerr << "Socket creation failed" << std::endl;
+        cerr << "Socket creation failed" << endl;
         return 1;
     }
     
@@ -545,16 +545,16 @@ int main() {
     address.sin_port = htons(PORT);
     
     if (bind(serverSocket, (struct sockaddr *)&address, sizeof(address)) < 0) {
-        std::cerr << "Bind failed" << std::endl;
+        cerr << "Bind failed" << endl;
         return 1;
     }
     
     if (listen(serverSocket, 10) < 0) {
-        std::cerr << "Listen failed" << std::endl;
+        cerr << "Listen failed" << endl;
         return 1;
     }
     
-    std::cout << "Server started on port " << PORT << std::endl;
+    cout << "Server started on port " << PORT << endl;
     
     while (true) {
         socklen_t addrlen = sizeof(address);
