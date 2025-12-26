@@ -13,6 +13,7 @@
 #include <time.h>
 #include <iomanip>
 #include <openssl/sha.h>
+#include "queries.h"
 using namespace std;
 #define PORT 8080
 #define BUFFER_SIZE 4096
@@ -115,7 +116,7 @@ int getUserIdFromToken(const string& token) {
 bool isAdmin(int userId) {
     if (userId == -1) return false;
     
-    const char* query = "SELECT role_id FROM users WHERE id = $1";
+    const char* query = UserQueries::GET_USER_ROLE;
     const char* paramValues[1];
     string userIdStr = to_string(userId);
     paramValues[0] = userIdStr.c_str();
@@ -211,7 +212,7 @@ void handleRequest(int clientSocket) {
     
     // API endpoints
     if (pathOnly == "/api/sections") {
-        const char* query = "SELECT id, name, description FROM sections ORDER BY id";
+        const char* query = SectionQueries::GET_ALL_SECTIONS;
         PGresult* res = PQexec(db.conn, query);
         
         if (PQresultStatus(res) != PGRES_TUPLES_OK) {
@@ -227,7 +228,8 @@ void handleRequest(int clientSocket) {
         int rows = PQntuples(res);
         for (int i = 0; i < rows; i++) {
             if (i > 0) json << ",";
-            json << "{\"id\":" << PQgetvalue(res, i, 0) 
+            // ID используется только для внутренней логики, не отображается пользователю
+            json << "{\"_id\":" << PQgetvalue(res, i, 0) 
                  << ",\"name\":\"" << jsonEscape(PQgetvalue(res, i, 1))
                  << "\",\"description\":\"" << jsonEscape(PQgetvalue(res, i, 2)) << "\"}";
         }
@@ -246,7 +248,7 @@ void handleRequest(int clientSocket) {
             
             if (sectionId > 0) {
                 // Защита от SQL инъекций: параметризованный запрос
-                query = "SELECT id, section_id, title, content_text, created_at, updated_at FROM content WHERE section_id = $1 ORDER BY id";
+                query = ContentQueries::GET_CONTENT_BY_SECTION;
                 const char* paramValues[1];
                 string sectionIdStr = to_string(sectionId);
                 paramValues[0] = sectionIdStr.c_str();
@@ -254,7 +256,7 @@ void handleRequest(int clientSocket) {
                 const int paramFormats[1] = {0};
                 res = PQexecParams(db.conn, query, 1, nullptr, paramValues, paramLengths, paramFormats, 0);
             } else {
-                query = "SELECT id, section_id, title, content_text, created_at, updated_at FROM content ORDER BY id";
+                query = ContentQueries::GET_ALL_CONTENT;
                 res = PQexec(db.conn, query);
             }
             
@@ -271,8 +273,9 @@ void handleRequest(int clientSocket) {
             int rows = PQntuples(res);
             for (int i = 0; i < rows; i++) {
                 if (i > 0) json << ",";
-                json << "{\"id\":" << PQgetvalue(res, i, 0)
-                     << ",\"section_id\":" << PQgetvalue(res, i, 1)
+                // ID используются только для внутренней логики, не отображаются пользователю
+                json << "{\"_id\":" << PQgetvalue(res, i, 0)
+                     << ",\"_section_id\":" << PQgetvalue(res, i, 1)
                      << ",\"title\":\"" << jsonEscape(PQgetvalue(res, i, 2))
                      << "\",\"content_text\":\"" << jsonEscape(PQgetvalue(res, i, 3))
                      << "\",\"created_at\":\"" << jsonEscape(PQgetvalue(res, i, 4))
@@ -307,7 +310,7 @@ void handleRequest(int clientSocket) {
             }
             
             // Параметризованный запрос для защиты от SQL инъекций
-            const char* query = "INSERT INTO content (section_id, title, content_text, author_id) VALUES ($1, $2, $3, $4) RETURNING id";
+            const char* query = ContentQueries::CREATE_CONTENT;
             const char* paramValues[4];
             paramValues[0] = bodyParams["section_id"].c_str();
             paramValues[1] = bodyParams["title"].c_str();
@@ -330,9 +333,8 @@ void handleRequest(int clientSocket) {
                 return;
             }
             
-            string newId = PQgetvalue(res, 0, 0);
             sendResponse(clientSocket, "HTTP/1.1 201 Created", "application/json", 
-                        "{\"id\":" + newId + ",\"message\":\"Content created\"}");
+                        "{\"message\":\"Content created\"}");
             PQclear(res);
         }
     }
@@ -362,7 +364,7 @@ void handleRequest(int clientSocket) {
             }
             
             // Параметризованный запрос
-            const char* query = "UPDATE content SET title = $1, content_text = $2, updated_at = CURRENT_TIMESTAMP WHERE id = $3";
+            const char* query = ContentQueries::UPDATE_CONTENT;
             const char* paramValues[3];
             paramValues[0] = bodyParams["title"].c_str();
             paramValues[1] = bodyParams["content_text"].c_str();
@@ -397,7 +399,7 @@ void handleRequest(int clientSocket) {
             }
             
             // Параметризованный запрос
-            const char* query = "DELETE FROM content WHERE id = $1";
+            const char* query = ContentQueries::DELETE_CONTENT;
             const char* paramValues[1];
             string idStrParam = to_string(contentId);
             paramValues[0] = idStrParam.c_str();
@@ -437,7 +439,7 @@ void handleRequest(int clientSocket) {
         string passwordHash = sha256(bodyParams["password"]);
         
         // Параметризованный запрос
-        const char* query = "INSERT INTO users (username, email, password_hash, role_id) VALUES ($1, $2, $3, 2) RETURNING id";
+        const char* query = UserQueries::REGISTER_USER;
         const char* paramValues[3];
         paramValues[0] = bodyParams["username"].c_str();
         paramValues[1] = bodyParams["email"].c_str();
@@ -463,9 +465,8 @@ void handleRequest(int clientSocket) {
             return;
         }
         
-        string userId = PQgetvalue(res, 0, 0);
         sendResponse(clientSocket, "HTTP/1.1 201 Created", "application/json", 
-                    "{\"id\":" + userId + ",\"message\":\"User created\"}");
+                    "{\"message\":\"User created\"}");
         PQclear(res);
     }
     else if (pathOnly == "/api/login" && method == "POST") {
@@ -484,7 +485,7 @@ void handleRequest(int clientSocket) {
         string passwordHash = sha256(bodyParams["password"]);
         
         // Параметризованный запрос
-        const char* query = "SELECT id, role_id FROM users WHERE username = $1 AND password_hash = $2";
+        const char* query = UserQueries::LOGIN_USER;
         const char* paramValues[2];
         paramValues[0] = bodyParams["username"].c_str();
         paramValues[1] = passwordHash.c_str();
@@ -510,7 +511,7 @@ void handleRequest(int clientSocket) {
         pthread_mutex_unlock(&sessions_mutex);
         
         stringstream json;
-        json << "{\"token\":\"" << token << "\",\"user_id\":" << userId << ",\"role_id\":" << roleId << "}";
+        json << "{\"token\":\"" << token << "\",\"role_id\":" << roleId << "}";
         sendResponse(clientSocket, "HTTP/1.1 200 OK", "application/json", json.str());
         PQclear(res);
     }

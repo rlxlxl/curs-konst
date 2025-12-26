@@ -379,7 +379,6 @@
             if (token) {
                 currentUser = {
                     token: token,
-                    user_id: localStorage.getItem('user_id'),
                     role_id: parseInt(localStorage.getItem('role_id'))
                 };
                 updateUI();
@@ -403,10 +402,10 @@
             sectionsView.innerHTML = '';
             sectionsView.className = 'sections';
             
-            sections.forEach(section => {
+            sections.forEach((section, index) => {
                 const card = document.createElement('div');
                 card.className = 'section-card';
-                card.onclick = () => loadSectionContent(section.id);
+                card.onclick = () => loadSectionContent(section._id || index);
                 card.innerHTML = `
                     <h3>${section.name}</h3>
                     <p>${section.description || ''}</p>
@@ -436,7 +435,7 @@
             contentView.className = 'content-area';
             contentView.innerHTML = '';
             
-            const section = sections.find(s => s.id === sectionId);
+            const section = sections.find(s => (s._id || s.id) === sectionId);
             const backButton = document.createElement('button');
             backButton.className = 'btn btn-primary';
             backButton.textContent = '← Назад к разделам';
@@ -462,16 +461,18 @@
                 contentView.appendChild(addButton);
             }
             
-            content.forEach(item => {
+            content.forEach((item, index) => {
                 const div = document.createElement('div');
                 div.className = 'content-item';
+                const itemId = item._id || index;
+                const itemSectionId = item._section_id || sectionId;
                 div.innerHTML = `
                     <h3>${item.title}</h3>
                     <p>${item.content_text}</p>
                     ${currentUser && currentUser.role_id === 1 ? `
                         <div class="admin-controls">
-                            <button class="btn btn-primary" onclick="showContentModal(${item.id}, ${item.section_id})">Редактировать</button>
-                            <button class="btn btn-danger" onclick="deleteContent(${item.id})">Удалить</button>
+                            <button class="btn btn-primary" data-content-id="${itemId}" data-section-id="${itemSectionId}" onclick="showContentModal(${itemId}, ${itemSectionId})">Редактировать</button>
+                            <button class="btn btn-danger" data-content-id="${itemId}" onclick="deleteContent(${itemId})">Удалить</button>
                         </div>
                     ` : ''}
                 `;
@@ -518,7 +519,6 @@
                     const data = await response.json();
                     currentUser = data;
                     localStorage.setItem('token', data.token);
-                    localStorage.setItem('user_id', data.user_id);
                     localStorage.setItem('role_id', data.role_id);
                     closeModal('loginModal');
                     updateUI();
@@ -573,7 +573,6 @@
         function logout() {
             currentUser = null;
             localStorage.removeItem('token');
-            localStorage.removeItem('user_id');
             localStorage.removeItem('role_id');
             updateUI();
         }
@@ -586,7 +585,7 @@
             if (currentUser) {
                 authButtons.classList.add('hidden');
                 userInfo.classList.remove('hidden');
-                document.getElementById('usernameDisplay').textContent = `Пользователь: ID ${currentUser.user_id}`;
+                document.getElementById('usernameDisplay').textContent = `Пользователь`;
                 if (currentUser.role_id === 1) {
                     document.getElementById('adminBadge').classList.remove('hidden');
                 } else {
@@ -610,11 +609,12 @@
             
             // Заполнить выпадающий список разделов
             sectionSelect.innerHTML = '';
-            sections.forEach(section => {
+            sections.forEach((section, index) => {
                 const option = document.createElement('option');
-                option.value = section.id;
+                const sectionIdValue = section._id || section.id || index;
+                option.value = sectionIdValue;
                 option.textContent = section.name;
-                if (section.id === sectionId) option.selected = true;
+                if (sectionIdValue === sectionId) option.selected = true;
                 sectionSelect.appendChild(option);
             });
             
@@ -623,7 +623,7 @@
                 fetch(`${API_URL}/content?section_id=${sectionId}`)
                     .then(r => r.json())
                     .then(content => {
-                        const item = content.find(c => c.id === contentId);
+                        const item = content.find(c => (c._id || c.id) === contentId);
                         if (item) {
                             document.getElementById('contentTitle').value = item.title;
                             document.getElementById('contentText').value = item.content_text;

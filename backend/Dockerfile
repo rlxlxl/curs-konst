@@ -13,7 +13,7 @@ RUN apt-get update && apt-get install -y \
 WORKDIR /app
 
 # Копирование исходного кода
-COPY main.cpp .
+COPY main.cpp queries.h .
 
 # Компиляция программы
 RUN g++ -std=c++17 -o main main.cpp -lpq -pthread -lcrypto
